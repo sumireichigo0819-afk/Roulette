@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ドキドキ！クラス抽選</title>
+    <style>
+        :root {
+            --bg-color: #0b0b2a;
+            --slot-frame: #ffb703;
+            --slot-bg: #ffffff;
+            --slot-text: #1a1a1a;
+            --btn-color: #ff0055;
+            --btn-hover: #ff3377;
+            --text-gold: #fb8500;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #1a1a4a 0%, var(--bg-color) 100%);
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            color: white;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            position: relative;
+        }
+
+        .spotlights {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .spotlight {
+            position: absolute;
+            top: -50%; left: 50%;
+            width: 200vw; height: 200vh;
+            background: conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 5%, rgba(255,255,255,0) 10%);
+            transform-origin: center top;
+            animation: rotateSpotlight 10s linear infinite;
+        }
+        .spotlight:nth-child(2) {
+            animation: rotateSpotlight 15s linear infinite reverse;
+            background: conic-gradient(from 45deg at 50% 50%, rgba(255,215,0,0) 0%, rgba(255,215,0,0.05) 5%, rgba(255,215,0,0) 10%);
+        }
+
+        @keyframes rotateSpotlight {
+            0% { transform: translateX(-50%) rotate(0deg); }
+            100% { transform: translateX(-50%) rotate(360deg); }
+        }
+
+        header {
+            z-index: 10;
+            text-align: center;
+            margin-top: 3vh;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 
+                0 0 10px #ff00aa, 
+                0 0 20px #ff00aa, 
+                0 0 30px #ff00aa,
+                2px 2px 0px #000;
+            animation: pulseTitle 2s infinite alternate;
+        }
+
+        @keyframes pulseTitle {
+            0% { transform: scale(1); text-shadow: 0 0 10px #ff00aa, 0 0 20px #ff00aa, 2px 2px 0px #000; }
+            100% { transform: scale(1.05); text-shadow: 0 0 15px #ff00aa, 0 0 30px #ff00aa, 0 0 45px #ff00aa, 4px 4px 0px #000; }
+        }
+
+        .stats {
+            margin-top: 10px;
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff, 1px 1px 2px #000;
+        }
+
+        .slot-machine-container {
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 95%;
+            max-width: 800px;
+            background: linear-gradient(to bottom, #4a0000, #220000);
+            padding: 20px;
+            border-radius: 20px;
+            border: 4px solid var(--slot-frame);
+            box-shadow: 
+                0 0 20px rgba(255, 183, 3, 0.5),
+                inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .slot-lights {
+            position: absolute;
+            top: -10px; bottom: -10px; left: -10px; right: -10px;
+            border: 4px dotted #ffcc00;
+            border-radius: 25px;
+            pointer-events: none;
+            animation: blinkLights 0.5s infinite alternate;
+        }
+
+        @keyframes blinkLights {
+            0% { border-color: #ffaa00; opacity: 0.5; box-shadow: inset 0 0 10px #ffaa00; }
+            100% { border-color: #ffffff; opacity: 1; box-shadow: inset 0 0 20px #ffffff; }
+        }
+
+        .slot-windows {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            background: #000;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.9);
+            position: relative;
+        }
+
+        .slot-column-wrapper {
+            flex: 1;
+            margin: 0 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .column-label {
+            color: #ffd700;
+            font-size: clamp(0.8rem, 2.5vw, 1.2rem);
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .slot-window {
+            width: 100%;
+            height: clamp(140px, 28vh, 220px);
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            border: 3px solid #ffd700;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        /* 中央の選択位置強調（文字を見やすくクッキリ囲むゴールド＆ピンクフレーム） */
+        .slot-window::after {
+            content: '';
+            position: absolute;
+            top: 33.333%;
+            left: 0;
+            right: 0;
+            height: 33.333%;
+            border-top: 3px solid #ff0055;
+            border-bottom: 3px solid #ff0055;
+            background: rgba(255, 235, 59, 0.18);
+            pointer-events: none;
+            z-index: 5;
+            box-shadow: inset 0 0 10px rgba(255, 235, 59, 0.4), 0 0 10px rgba(255, 0, 85, 0.6);
+        }
+
+        /* ドラムの上下のグラデーション（文字を隠さないようマイルドに） */
+        .slot-window::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, 
+                rgba(0, 0, 0, 0.65) 0%, 
+                rgba(0, 0, 0, 0) 33.333%, 
+                rgba(0, 0, 0, 0) 66.666%, 
+                rgba(0, 0, 0, 0.65) 100%);
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .drum {
+            width: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            will-change: transform;
+        }
+
+        .drum-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(2.3rem, 6vw, 4.8rem);
+            color: #0d0d0d;
+            font-weight: 900;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            box-sizing: border-box;
+            letter-spacing: -1px;
+        }
+
+        .controls {
+            z-index: 10;
+            margin-bottom: 5vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .btn-draw {
+            background: linear-gradient(to bottom, #ff5555, var(--btn-color));
+            color: white;
+            border: 4px solid #fff;
+            border-radius: 50px;
+            padding: 15px 40px;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #990033, 0 15px 20px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-draw::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(45deg);
+            animation: shineBtn 3s infinite;
+        }
+
+        @keyframes shineBtn {
+            0% { left: -100%; }
+            20% { left: 100%; }
+            100% { left: 100%; }
+        }
+
+        .btn-draw:active {
+            transform: translateY(10px);
+            box-shadow: 0 0px 0 #990033, 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-draw:disabled {
+            background: #555;
+            border-color: #888;
+            box-shadow: 0 10px 0 #222;
+            cursor: not-allowed;
+            color: #aaa;
+        }
+        .btn-draw:disabled::after { animation: none; }
+
+        .btn-reset {
+            background: transparent;
+            color: #aaa;
+            border: 1px solid #aaa;
+            padding: 8px 20px;
+            font-size: 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-reset:hover {
+            color: #fff;
+            border-color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+
+        #confetti-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .winner-title {
+            color: #ff0055;
+            font-size: clamp(3rem, 10vw, 6rem);
+            text-shadow: 0 0 20px #fff, 0 0 40px #ff0055, 4px 4px 0 #000;
+            transform: scale(0);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .overlay.active .winner-title {
+            transform: scale(1) rotate(-5deg);
+            animation: pulseWinner 1s infinite alternate;
+        }
+
+        @keyframes pulseWinner {
+            100% { transform: scale(1.1) rotate(-5deg); text-shadow: 0 0 30px #fff, 0 0 60px #ff0055, 4px 4px 0 #000; }
+        }
+
+        .winner-result {
+            margin-top: 20px;
+            font-size: clamp(2rem, 6vw, 4rem);
+            color: #ffd700;
+            background: linear-gradient(to bottom, #ffffff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 10px rgba(255, 215, 0, 0.5);
+            transform: translateY(50px);
+            opacity: 0;
+            transition: all 0.5s 0.3s ease-out;
+        }
+        .overlay.active .winner-result {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .btn-close {
+            margin-top: 40px;
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.5s 1s;
+        }
+        .overlay.active .btn-close {
+            opacity: 1;
+        }
+
+        /* 画面フラッシュ演出 */
+        .flash {
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background: white;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .flash.active {
+            animation: flashAnim 0.8s ease-out forwards;
+        }
+        @keyframes flashAnim {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="spotlights">
+        <div class="spotlight"></div>
+        <div class="spotlight"></div>
+    </div>
+
+    <header>
+        <h1>ドキドキ！クラス抽選</h1>
+        <div class="stats">
+            抽選回数: <span id="draw-count">0</span>回 | 残り: <span id="remain-count">--</span>人
+        </div>
+    </header>
+
+    <div class="slot-machine-container">
+        <div class="slot-lights"></div>
+        <div class="slot-windows">
+            <!-- ドラム1: 学年 -->
+            <div class="slot-column-wrapper">
+                <div class="column-label">学年</div>
+                <div class="slot-window">
+                    <div class="drum" id="drum-0"></div>
+                </div>
+            </div>
+            <!-- ドラム2: クラス -->
+            <div class="slot-column-wrapper">
+                <div class="column-label">クラス</div>
+                <div class="slot-window">
+                    <div class="drum" id="drum-1"></div>
+                </div>
+            </div>
+            <!-- ドラム3: 番号(10の位) -->
+            <div class="slot-column-wrapper">
+                <div class="column-label">10の位</div>
+                <div class="slot-window">
+                    <div class="drum" id="drum-2"></div>
+                </div>
+            </div>
+            <!-- ドラム4: 番号(1の位) -->
+            <div class="slot-column-wrapper">
+                <div class="column-label">1の位</div>
+                <div class="slot-window">
+                    <div class="drum" id="drum-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-draw" id="btn-draw">抽選する！</button>
+        <button class="btn-reset" id="btn-reset">リセットして最初から</button>
+    </div>
+
+    <!-- 当選演出用 -->
+    <canvas id="confetti-canvas"></canvas>
+    <div class="flash" id="flash-overlay"></div>
+    
+    <div class="overlay" id="result-overlay">
+        <div class="winner-title" id="winner-text">WINNER!</div>
+        <div class="winner-result" id="winner-detail">2年3組 27番</div>
+        <button class="btn-close" id="btn-close">閉じる</button>
+    </div>
+
+    <script>
+        // クラスと人数の定義
+        const classData = [
+            { g: 1, c: 1, n: 32 }, { g: 1, c: 2, n: 25 }, { g: 1, c: 3, n: 33 }, { g: 1, c: 4, n: 33 }, { g: 1, c: 5, n: 35 },
+            { g: 2, c: 1, n: 35 }, { g: 2, c: 2, n: 33 }, { g: 2, c: 3, n: 34 }, { g: 2, c: 4, n: 35 }, { g: 2, c: 5, n: 36 },
+            { g: 3, c: 1, n: 33 }, { g: 3, c: 2, n: 14 }, { g: 3, c: 3, n: 29 }, { g: 3, c: 4, n: 33 }, { g: 3, c: 5, n: 31 }
+        ];
+
+        let allStudents = [];
+        let remainingStudents = [];
+        let drawCount = 0;
+        let isDrawing = false;
+
+        // 生徒プールの初期化
+        function initStudents() {
+            allStudents = [];
+            classData.forEach(cls => {
+                for(let i = 1; i <= cls.n; i++) {
+                    allStudents.push({
+                        grade: cls.g,
+                        classNum: cls.c,
+                        num10: Math.floor(i / 10),
+                        num1: i % 10,
+                        raw: i,
+                        text: `${cls.g}年${cls.c}組 ${i}番`
+                    });
+                }
+            });
+            remainingStudents = [...allStudents];
+            drawCount = 0;
+            updateStats();
+        }
+
+        // 表示の更新
+        function updateStats() {
+            document.getElementById('draw-count').innerText = drawCount;
+            document.getElementById('remain-count').innerText = remainingStudents.length;
+            
+            const btn = document.getElementById('btn-draw');
+            if (remainingStudents.length === 0) {
+                btn.innerText = "ALL CLEAR!";
+                btn.disabled = true;
+            } else if (!isDrawing) {
+                btn.innerText = "抽選する！";
+                btn.disabled = false;
+            }
+        }
+
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 基本的な発音関数
+        function playTone(freq, type, time, duration, vol) {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(vol, time + 0.05);
+            gain.gain.setValueAtTime(vol, time + duration - 0.05);
+            gain.gain.linearRampToValueAtTime(0, time + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(time);
+            osc.stop(time + duration);
+        }
+
+        // 抽選開始音
+        function playStartSound() {
+            initAudio();
+            const t = audioCtx.currentTime;
+            playTone(880, 'square', t, 0.1, 0.1);
+            playTone(1760, 'square', t + 0.15, 0.3, 0.15);
+        }
+
+        // 抽選中BGM（ドラムロールと緊張感）
+        function playDrumRoll(totalDuration) {
+            initAudio();
+            const startT = audioCtx.currentTime;
+            
+            // ピッチが上がるノイズ音で緊張感を演出
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            
+            // 最初は低い音から、徐々に高く
+            osc.frequency.setValueAtTime(50, startT);
+            // タメの直前(3.1秒)までに高音へ
+            osc.frequency.exponentialRampToValueAtTime(300, startT + 3.1);
+            
+            // 音量も徐々に上げる
+            gain.gain.setValueAtTime(0.05, startT);
+            gain.gain.linearRampToValueAtTime(0.2, startT + 3.1);
+            
+            // 3.1秒時点でスパッと切る（タメ）
+            gain.gain.setValueAtTime(0.2, startT + 3.1);
+            gain.gain.linearRampToValueAtTime(0, startT + 3.15);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(startT);
+            osc.stop(startT + 3.2);
+
+            // ドコドコ音（キック）
+            let beatTime = 0;
+            let interval = 0.2; // 初期テンポ
+            while (beatTime < 3.1) {
+                playKick(startT + beatTime, 0.3);
+                interval = Math.max(0.05, interval * 0.92); // 徐々に速く
+                beatTime += interval;
+            }
+        }
+
+        function playKick(time, vol) {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(150, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.1);
+            gain.gain.setValueAtTime(vol, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(time);
+            osc.stop(time + 0.1);
+        }
+
+        // 当選音（ドン！＋ファンファーレ）
+        function playWinSound() {
+            initAudio();
+            const t = audioCtx.currentTime;
+            
+            // ドン！（爆発音的）
+            playKick(t, 1.0);
+            
+            // シンバル的ノイズ
+            const bufferSize = audioCtx.sampleRate * 1.5;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 2000;
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.5, t);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+            noise.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noise.start(t);
+
+            // ファンファーレ（派手な和音）
+            const notes = [
+                { f: 523.25, t: 0, d: 0.15 }, // C
+                { f: 659.25, t: 0.15, d: 0.15 }, // E
+                { f: 783.99, t: 0.3, d: 0.15 }, // G
+                { f: 1046.50, t: 0.45, d: 1.5 }, // C高
+                { f: 783.99, t: 0.45, d: 1.5 }, // G和音
+                { f: 659.25, t: 0.45, d: 1.5 }, // E和音
+            ];
+            notes.forEach(n => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.value = n.f;
+                gain.gain.setValueAtTime(0, t + n.t);
+                gain.gain.linearRampToValueAtTime(0.2, t + n.t + 0.05);
+                gain.gain.setValueAtTime(0.2, t + n.t + n.d - 0.2);
+                gain.gain.linearRampToValueAtTime(0, t + n.t + n.d);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(t + n.t);
+                osc.stop(t + n.t + n.d);
+            });
+        }
+
+        const drumElements = [
+            document.getElementById('drum-0'),
+            document.getElementById('drum-1'),
+            document.getElementById('drum-2'),
+            document.getElementById('drum-3')
+        ];
+        
+        // スロット（ドラム）の内容定義
+        const slotContents = [
+            ['1年', '2年', '3年'],
+            ['1組', '2組', '3組', '4組', '5組'],
+            ['0', '1', '2', '3', '4'],
+            ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        ];
+
+        // スロット枠から高さをピクセル精度で厳密取得
+        function getItemHeight() {
+            const windowEl = document.querySelector('.slot-window');
+            if (!windowEl) return 50;
+            return windowEl.getBoundingClientRect().height / 3;
+        }
+
+        // ドラムの中身を生成（各要素にpx高さを明示して誤差累積をゼロにする）
+        function buildDrum(drumIdx, targetText, itemCount = 60) {
+            const drum = drumElements[drumIdx];
+            drum.innerHTML = '';
+            const contents = slotContents[drumIdx];
+            const itemHeight = getItemHeight();
+            
+            // ランダムなアイテムを敷き詰める
+            for (let i = 0; i < itemCount - 2; i++) {
+                const text = contents[Math.floor(Math.random() * contents.length)];
+                addDrumItem(drum, text, itemHeight);
+            }
+            // 目的のアイテム（停止位置）
+            addDrumItem(drum, targetText, itemHeight);
+            // その下にもダミーを追加
+            addDrumItem(drum, contents[Math.floor(Math.random() * contents.length)], itemHeight);
+            addDrumItem(drum, contents[Math.floor(Math.random() * contents.length)], itemHeight);
+            
+            // 初期位置
+            drum.style.transform = `translateY(0px)`;
+        }
+
+        function addDrumItem(parent, text, height) {
+            const div = document.createElement('div');
+            div.className = 'drum-item';
+            div.innerText = text;
+            div.style.height = `${height}px`; // ピクセル単位で固定して誤差を防ぐ
+            div.style.lineHeight = `${height}px`;
+            parent.appendChild(div);
+        }
+
+        // イージング関数 (最後はピタッと中央に吸着して止まる)
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        // 抽選のメイン処理
+        async function draw() {
+            if (isDrawing || remainingStudents.length === 0) return;
+            isDrawing = true;
+            document.getElementById('btn-draw').disabled = true;
+            
+            // サウンド再生開始
+            playStartSound();
+            setTimeout(() => playDrumRoll(3.5), 200);
+
+            // 当選者を決定
+            const rIndex = Math.floor(Math.random() * remainingStudents.length);
+            const winner = remainingStudents[rIndex];
+            remainingStudents.splice(rIndex, 1);
+            drawCount++;
+            updateStats();
+
+            const targetTexts = [
+                `${winner.grade}年`,
+                `${winner.classNum}組`,
+                `${winner.num10}`,
+                `${winner.num1}`
+            ];
+
+            const itemHeight = getItemHeight();
+            const itemCount = 60;
+            
+            // 各ドラムを構築
+            for (let i = 0; i < 4; i++) {
+                buildDrum(i, targetTexts[i], itemCount);
+            }
+
+            // 正確な中央停止位置の計算
+            // 目標のアイテムは (itemCount - 2) 番目のインデックス
+            // これを上から2番目(中央)にするための移動量: -((itemCount - 2) - 1) * itemHeight
+            const targetY = -(itemCount - 3) * itemHeight;
+
+            // ドラムごとの停止タイミング（タメを作る）
+            const durations = [2200, 2500, 2800, 3500]; // ms
+            const startTime = performance.now();
+
+            return new Promise(resolve => {
+                function animate(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    let allFinished = true;
+
+                    for (let i = 0; i < 4; i++) {
+                        const duration = durations[i];
+                        let progress = elapsed / duration;
+                        
+                        if (progress < 1) {
+                            allFinished = false;
+                            const easedProgress = easeOutCubic(progress);
+                            const currentY = targetY * easedProgress;
+                            drumElements[i].style.transform = `translateY(${currentY}px)`;
+                        } else {
+                            // 完了したドラムは目標のピッタリの位置に固定
+                            drumElements[i].style.transform = `translateY(${targetY}px)`;
+                        }
+                    }
+
+                    if (!allFinished) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        showResult(winner);
+                        resolve();
+                    }
+                }
+                requestAnimationFrame(animate);
+            });
+        }
+
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let confettiAnimId = null;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createConfetti() {
+            particles = [];
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff'];
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    w: Math.random() * 10 + 5,
+                    h: Math.random() * 20 + 10,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: Math.random() * 5 + 3,
+                    speedX: Math.random() * 4 - 2,
+                    rot: Math.random() * 360,
+                    rotSpeed: Math.random() * 10 - 5
+                });
+            }
+        }
+
+        function renderConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+            particles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rot += p.rotSpeed;
+                if (p.y < canvas.height) active = true;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot * Math.PI / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+
+            if (active) {
+                confettiAnimId = requestAnimationFrame(renderConfetti);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function showResult(winner) {
+            // フラッシュ演出
+            const flash = document.getElementById('flash-overlay');
+            flash.classList.remove('active');
+            void flash.offsetWidth; // リフロー強制
+            flash.classList.add('active');
+
+            // サウンド
+            playWinSound();
+
+            // 紙吹雪
+            createConfetti();
+            cancelAnimationFrame(confettiAnimId);
+            renderConfetti();
+
+            // UI表示
+            const overlay = document.getElementById('result-overlay');
+            const winnerText = document.getElementById('winner-text');
+            const detailText = document.getElementById('winner-detail');
+            
+            if (remainingStudents.length === 0) {
+                winnerText.innerText = "ALL CLEAR!";
+            } else {
+                winnerText.innerText = "WINNER!";
+            }
+            detailText.innerText = winner.text;
+            
+            overlay.classList.add('active');
+        }
+
+        function hideResult() {
+            document.getElementById('result-overlay').classList.remove('active');
+            isDrawing = false;
+            updateStats();
+        }
+
+        document.getElementById('btn-draw').addEventListener('click', draw);
+        document.getElementById('btn-close').addEventListener('click', hideResult);
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            if(confirm('抽選状態をリセットして最初からやり直しますか？')) {
+                hideResult();
+                initStudents();
+                // ドラム表示をリセット
+                const itemHeight = getItemHeight();
+                for(let i=0; i<4; i++){
+                    buildDrum(i, "-", 3); 
+                    // 中央に "-" が来るようにする
+                    drumElements[i].style.transform = `translateY(0px)`;
+                }
+            }
+        });
+
+        // 初期化実行
+        initStudents();
+        // 初期ドラム表示
+        window.addEventListener('resize', () => {
+            if (!isDrawing) {
+                for(let i=0; i<4; i++) buildDrum(i, "-", 3);
+            }
+        });
+        setTimeout(() => {
+            for(let i=0; i<4; i++) buildDrum(i, "-", 3);
+        }, 100);
+
+    </script>
+</body>
+</html>
